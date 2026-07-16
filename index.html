@@ -312,7 +312,7 @@
         <p class="subtitle">Calculează veniturile și taxele CASS conform plafoanelor</p>
 
         <div class="info-box">
-            ℹ️ <strong>Informație:</strong> Introduceți veniturile <strong>brute</strong> anuale din chirii și dobânzi. Baza de calcul CASS/CAS este <strong>80% din venitul brut</strong>, conform legislației în vigoare. Datele se salvează automat în browser (localStorage).
+            ℹ️ <strong>Informație:</strong> Introduceți veniturile <strong>brute</strong> anuale din chirii și dobânzi. Baza de calcul CASS/CAS este <strong>80% din venitul brut</strong>, conform legislației în vigoare. Datele se salvează local în browser și pot fi sincronizate în Cloudflare pentru persistență.
         </div>
 
         <div class="form-group">
@@ -347,13 +347,13 @@
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0;">
             <button class="btn-calculate" onclick="calculateTotal()" style="background: #51cf66; grid-column: 1;">📊 Calculeaza total</button>
-            <button class="btn-calculate" onclick="saveData()" style="background: #4c6ef5; grid-column: 2;">💾 Salvează date</button>
+            <button class="btn-calculate" onclick="saveData()" style="background: #4c6ef5; grid-column: 2;">💾 Salvează (local + cloud)</button>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px;">
             <button class="btn-calculate" onclick="toggleDataPanel()" style="background: #495057;">🗃️ Date salvate</button>
             <button class="btn-calculate" onclick="clearData()" style="background: #ff6b6b;">🗑️ Șterge salvate</button>
-            <button class="btn-calculate" onclick="loadData()" style="background: #ff922b;">📂 Reîncarcă</button>
+            <button class="btn-calculate" onclick="loadData()" style="background: #ff922b;">📂 Reîncarcă (cloud/local)</button>
         </div>
 
         <!-- Panou date salvate -->
@@ -437,6 +437,8 @@
     <script>
         let rentalIncomeCount = 0;
         let interestIncomeCount = 0;
+        const LOCAL_STORAGE_KEY = 'cassCalculatorData';
+        const CLIENT_ID_KEY = 'cassCalculatorClientId';
 
         const THRESHOLDS = {
             min: 6,      // salarii minime - prag minim CASS
@@ -620,16 +622,18 @@
             document.getElementById('results').classList.add('show');
         }
 
-        // Add initial empty items
-        addRentalIncome();
-        addInterestIncome();
-
-        // Load data on page load
-        window.addEventListener('DOMContentLoaded', function() {
-            loadData();
-        });
-
         let autoSaveTimer = null;
+
+        function getClientId() {
+            let clientId = localStorage.getItem(CLIENT_ID_KEY);
+            if (!clientId) {
+                clientId = (window.crypto && crypto.randomUUID)
+                    ? crypto.randomUUID()
+                    : 'cass-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+                localStorage.setItem(CLIENT_ID_KEY, clientId);
+            }
+            return clientId;
+        }
 
         function collectData() {
             const minSalary = document.getElementById('minSalary').value;
@@ -662,7 +666,7 @@
 
         function autoSave() {
             const data = collectData();
-            localStorage.setItem('cassCalculatorData', JSON.stringify(data));
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
             const indicator = document.getElementById('save-indicator');
             if (indicator) {
                 indicator.textContent = '💾 Salvat automat: ' + data.savedDate;
@@ -670,15 +674,50 @@
             }
         }
 
+        async function saveDataToCloud(data) {
+            const clientId = getClientId();
+            const response = await fetch(`/api/data/${encodeURIComponent(clientId)}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) {
+                throw new Error('Cloud save failed');
+            }
+        }
+
+        async function loadDataFromCloud() {
+            const clientId = getClientId();
+            const response = await fetch(`/api/data/${encodeURIComponent(clientId)}`);
+
+            if (response.status === 404) {
+                return null;
+            }
+
+            if (!response.ok) {
+                throw new Error('Cloud load failed');
+            }
+
+            return response.json();
+        }
+
         function debouncedAutoSave() {
             clearTimeout(autoSaveTimer);
             autoSaveTimer = setTimeout(autoSave, 800);
         }
 
-        function saveData() {
+        async function saveData() {
             autoSave();
-            const savedDate = document.getElementById('save-indicator').textContent;
-            alert('✅ Datele au fost salvate cu succes!\n\n' + savedDate);
+            const data = collectData();
+
+            try {
+                await saveDataToCloud(data);
+                const savedDate = document.getElementById('save-indicator').textContent;
+                alert('✅ Datele au fost salvate local și în Cloudflare!\n\n' + savedDate);
+            } catch (error) {
+                alert('⚠️ Salvare cloud indisponibilă. Datele rămân salvate local în browser.');
+            }
         }
 
         function toggleDataPanel() {
@@ -690,7 +729,7 @@
         }
 
         function renderDataPanel() {
-            const raw = localStorage.getItem('cassCalculatorData');
+            const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
             const content = document.getElementById('data-panel-content');
 
             if (!raw) {
@@ -739,7 +778,7 @@
         }
 
         function exportJSON() {
-            const raw = localStorage.getItem('cassCalculatorData');
+            const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
             if (!raw) { alert('Nu există date salvate de exportat.'); return; }
             const blob = new Blob([JSON.stringify(JSON.parse(raw), null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -758,7 +797,7 @@
                 try {
                     const data = JSON.parse(e.target.result);
                     if (!data.rentalData || !data.interestData) throw new Error('Format invalid');
-                    localStorage.setItem('cassCalculatorData', JSON.stringify(data));
+                    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
                     loadData();
                     renderDataPanel();
                     const indicator = document.getElementById('save-indicator');
@@ -773,82 +812,116 @@
             event.target.value = '';
         }
 
-        function loadData() {
-            const savedData = localStorage.getItem('cassCalculatorData');
-            
+        function applyData(data) {
+            if (!data) {
+                return false;
+            }
+
+            // Load min salary
+            document.getElementById('minSalary').value = data.minSalary || 4050;
+
+            // Clear existing items
+            document.getElementById('rental-income-list').innerHTML = '';
+            document.getElementById('interest-income-list').innerHTML = '';
+
+            rentalIncomeCount = 0;
+            interestIncomeCount = 0;
+
+            // Load rental data
+            if (data.rentalData && data.rentalData.length > 0) {
+                data.rentalData.forEach(item => {
+                    addRentalIncome();
+                    const lastItem = document.querySelector('#rental-income-list .income-item:last-child');
+                    if (lastItem) {
+                        lastItem.querySelector('.description').value = item.description || '';
+                        lastItem.querySelector('.amount').value = item.amount || '';
+                    }
+                });
+            } else {
+                addRentalIncome();
+            }
+
+            // Load interest data
+            if (data.interestData && data.interestData.length > 0) {
+                data.interestData.forEach(item => {
+                    addInterestIncome();
+                    const lastItem = document.querySelector('#interest-income-list .income-item:last-child');
+                    if (lastItem) {
+                        lastItem.querySelector('.description').value = item.description || '';
+                        lastItem.querySelector('.amount').value = item.amount || '';
+                    }
+                });
+            } else {
+                addInterestIncome();
+            }
+
+            return true;
+        }
+
+        function loadDataFromLocal() {
+            const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+
             if (!savedData) {
                 console.log('No saved data found');
-                return;
+                return false;
             }
 
             try {
                 const data = JSON.parse(savedData);
-
-                // Load min salary
-                document.getElementById('minSalary').value = data.minSalary || 4050;
-
-                // Clear existing items
-                document.getElementById('rental-income-list').innerHTML = '';
-                document.getElementById('interest-income-list').innerHTML = '';
-
-                // Load rental data
-                if (data.rentalData && data.rentalData.length > 0) {
-                    data.rentalData.forEach(item => {
-                        addRentalIncome();
-                        const lastItem = document.querySelector('#rental-income-list .income-item:last-child');
-                        if (lastItem) {
-                            lastItem.querySelector('.description').value = item.description || '';
-                            lastItem.querySelector('.amount').value = item.amount || '';
-                        }
-                    });
-                } else {
-                    addRentalIncome();
-                }
-
-                // Load interest data
-                if (data.interestData && data.interestData.length > 0) {
-                    data.interestData.forEach(item => {
-                        addInterestIncome();
-                        const lastItem = document.querySelector('#interest-income-list .income-item:last-child');
-                        if (lastItem) {
-                            lastItem.querySelector('.description').value = item.description || '';
-                            lastItem.querySelector('.amount').value = item.amount || '';
-                        }
-                    });
-                } else {
-                    addInterestIncome();
-                }
-
+                const applied = applyData(data);
                 console.log('Data loaded successfully from:', data.savedDate);
+                return applied;
             } catch (error) {
                 console.error('Error loading data:', error);
+                return false;
+            }
+        }
+
+        async function loadData() {
+            try {
+                const cloudData = await loadDataFromCloud();
+                if (cloudData) {
+                    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cloudData));
+                    applyData(cloudData);
+                    const indicator = document.getElementById('save-indicator');
+                    indicator.textContent = '☁️ Date încărcate din Cloudflare';
+                    indicator.style.display = 'block';
+                    return;
+                }
+            } catch (error) {
+                console.warn('Cloud load failed, falling back to local storage.');
+            }
+
+            const localLoaded = loadDataFromLocal();
+            if (!localLoaded) {
+                document.getElementById('rental-income-list').innerHTML = '';
+                document.getElementById('interest-income-list').innerHTML = '';
+                rentalIncomeCount = 0;
+                interestIncomeCount = 0;
+                addRentalIncome();
+                addInterestIncome();
             }
         }
 
         function clearData() {
             if (confirm('⚠️ Ești sigur că vrei să ștergi datele salvate? Această acțiune nu se poate anula!')) {
-                localStorage.removeItem('cassCalculatorData');
+                localStorage.removeItem(LOCAL_STORAGE_KEY);
                 alert('✅ Datele salvate au fost șterse.');
                 
                 // Reset form
                 document.getElementById('rental-income-list').innerHTML = '';
                 document.getElementById('interest-income-list').innerHTML = '';
                 document.getElementById('results').classList.remove('show');
+                rentalIncomeCount = 0;
+                interestIncomeCount = 0;
                 addRentalIncome();
                 addInterestIncome();
             }
         }
 
         // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize with empty items if no saved data
-            const savedData = localStorage.getItem('cassCalculatorData');
-            if (!savedData) {
-                addRentalIncome();
-                addInterestIncome();
-            } else {
-                loadData();
-            }
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadData();
         });
     </script>
 </body>
