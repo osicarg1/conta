@@ -4,4 +4,4 @@ compatibility_date = "2026-07-16"
 [[kv_namespaces]]
 binding = "CASS_DATA"
 id = "3bd4f90e9221443bbc0135a30700c0af"
-preview_id = "REPLACE_WITH_YOUR_KV_PREVIEW_ID"
+preview_id = "3bd4f90e9221443bbc0135a30700c0af"
