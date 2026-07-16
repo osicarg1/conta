@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator Venituri - CASS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="number"],
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="number"]:focus,
+        input[type="text"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .info-box {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 5px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .income-section {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .income-item {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: end;
+        }
+
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-add {
+            background: #667eea;
+            color: white;
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+        }
+
+        .btn-add:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .btn-remove {
+            background: #ff6b6b;
+            color: white;
+            padding: 10px 15px;
+            min-width: 80px;
+        }
+
+        .btn-remove:hover {
+            background: #ff5252;
+        }
+
+        .btn-calculate {
+            background: #51cf66;
+            color: white;
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+
+        .btn-calculate:hover {
+            background: #40c057;
+            transform: translateY(-2px);
+        }
+
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f0f4ff;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 14px;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .result-label {
+            color: #666;
+            font-weight: 600;
+        }
+
+        .result-value {
+            color: #333;
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            margin-top: 15px;
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .status.ok {
+            background: #d3f9d8;
+            color: #2f9e44;
+            border: 2px solid #51cf66;
+        }
+
+        .status.warning {
+            background: #fff3bf;
+            color: #e67700;
+            border: 2px solid #ffd43b;
+        }
+
+        .status.over {
+            background: #ffe0e0;
+            color: #c92a2a;
+            border: 2px solid #ff6b6b;
+        }
+
+        .threshold-info {
+            background: #e7f5ff;
+            border-left: 4px solid #1971c2;
+            padding: 12px;
+            margin-top: 15px;
+            border-radius: 5px;
+            font-size: 13px;
+            color: #1971c2;
+        }
+
+        .data-panel {
+            display: none;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .data-panel.show {
+            display: block;
+        }
+
+        .data-panel h3 {
+            color: #333;
+            font-size: 15px;
+            margin-bottom: 15px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-bottom: 15px;
+        }
+
+        .data-table th {
+            background: #667eea;
+            color: white;
+            padding: 8px 10px;
+            text-align: left;
+        }
+
+        .data-table td {
+            padding: 7px 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .data-table tr:nth-child(even) td {
+            background: #f0f4ff;
+        }
+
+        .btn-io {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-export { background: #20c997; color: white; }
+        .btn-export:hover { background: #12b886; }
+        .btn-import { background: #f76707; color: white; }
+        .btn-import:hover { background: #e8590c; }
+
+        .no-data-msg {
+            color: #999;
+            font-size: 13px;
+            text-align: center;
+            padding: 15px 0;
+        }
+
+        @media (max-width: 500px) {
+            .container {
+                padding: 20px;
+            }
+
+            .income-item {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💰 Calculator Venituri CASS 2026</h1>
+        <p class="subtitle">Calculează veniturile și taxele CASS conform plafoanelor</p>
+
+        <div class="info-box">
+            ℹ️ <strong>Informație:</strong> Introduceți veniturile <strong>brute</strong> anuale din chirii și dobânzi. Baza de calcul CASS/CAS este <strong>80% din venitul brut</strong>, conform legislației în vigoare. Datele se salvează automat în browser (localStorage).
+        </div>
+
+        <div class="form-group">
+            <label for="minSalary">Salariu minim brut (RON):</label>
+            <input 
+                type="number" 
+                id="minSalary" 
+                value="4050" 
+                placeholder="Ex: 4050"
+                min="0"
+                step="50"
+                onchange="updateThresholds()"
+            >
+            <div class="threshold-info">
+                💡 Actualizare salariu minim (2026): 4.050 RON. Plafoanele se calculează ca multipli ai acestuia.
+            </div>
+        </div>
+
+        <div class="income-section">
+            <h3 style="margin-bottom: 15px; color: #333; font-size: 16px;">Venituri din chirii</h3>
+            <div id="rental-income-list"></div>
+            <button class="btn-add" onclick="addRentalIncome()">+ Adaugă venit din chirii</button>
+        </div>
+
+        <div class="income-section">
+            <h3 style="margin-bottom: 15px; color: #333; font-size: 16px;">Venituri din dobânzi</h3>
+            <div id="interest-income-list"></div>
+            <button class="btn-add" onclick="addInterestIncome()">+ Adaugă venit din dobânzi</button>
+        </div>
+
+        <div id="save-indicator" style="display:none; background:#d3f9d8; color:#2f9e44; border-radius:5px; padding:8px 12px; font-size:13px; margin-bottom:10px; text-align:center;"></div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0;">
+            <button class="btn-calculate" onclick="calculateTotal()" style="background: #51cf66; grid-column: 1;">📊 Calculeaza total</button>
+            <button class="btn-calculate" onclick="saveData()" style="background: #4c6ef5; grid-column: 2;">💾 Salvează date</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+            <button class="btn-calculate" onclick="toggleDataPanel()" style="background: #495057;">🗃️ Date salvate</button>
+            <button class="btn-calculate" onclick="clearData()" style="background: #ff6b6b;">🗑️ Șterge salvate</button>
+            <button class="btn-calculate" onclick="loadData()" style="background: #ff922b;">📂 Reîncarcă</button>
+        </div>
+
+        <!-- Panou date salvate -->
+        <div class="data-panel" id="data-panel">
+            <h3>🗃️ Date salvate în browser</h3>
+            <div id="data-panel-content"></div>
+            <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
+                <button class="btn-io btn-export" onclick="exportJSON()">⬇️ Export JSON</button>
+                <label class="btn-io btn-import" style="cursor:pointer;">
+                    ⬆️ Import JSON
+                    <input type="file" accept=".json" onchange="importJSON(event)" style="display:none;">
+                </label>
+            </div>
+        </div>
+
+        <div class="results" id="results">
+            <div class="result-item">
+                <span class="result-label">Total venituri din chirii:</span>
+                <span class="result-value" id="rental-total">0,00 RON</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Total venituri din dobânzi:</span>
+                <span class="result-value" id="interest-total">0,00 RON</span>
+            </div>
+            <div class="result-item" style="border-bottom: 2px solid #667eea; padding-bottom: 20px;">
+                <span class="result-label">TOTAL VENITURI BRUTE ANUALE:</span>
+                <span class="result-value" id="grand-total">0,00 RON</span>
+            </div>
+            <div class="result-item" style="background: #fff9db; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                <span class="result-label">📐 Bază de calcul (80% din brut):</span>
+                <span class="result-value" id="taxable-base" style="color: #e67700;">0,00 RON</span>
+            </div>
+            
+            <div style="background: white; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                <h4 style="color: #333; margin-bottom: 15px; font-size: 15px;">📋 Plafoane CASS aplicabile:</h4>
+                <div class="result-item">
+                    <span class="result-label">Prag minim (6 salarii):</span>
+                    <span class="result-value" id="threshold-6">24.300,00 RON</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Prag CAS 25% (12 salarii):</span>
+                    <span class="result-value" id="threshold-12">48.600,00 RON</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Prag superior CAS (24 salarii):</span>
+                    <span class="result-value" id="threshold-24">97.200,00 RON</span>
+                </div>
+                <div class="result-item" style="border-bottom: none;">
+                    <span class="result-label">Prag maxim (72 salarii):</span>
+                    <span class="result-value" id="threshold-72">291.600,00 RON</span>
+                </div>
+            </div>
+
+            <div style="background: #fffbea; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #fab005;">
+                <h4 style="color: #333; margin-bottom: 12px; font-size: 15px;">🔍 Categoria și Calcul CASS:</h4>
+                <div id="cass-category" style="color: #333; font-size: 14px; line-height: 1.6;"></div>
+            </div>
+
+            <div class="result-item">
+                <span class="result-label">Bază calcul CASS/CAS (după plafoane):</span>
+                <span class="result-value" id="cass-base">0,00 RON</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Rata CASS/CAS:</span>
+                <span class="result-value" id="cass-rate">0%</span>
+            </div>
+            <div class="result-item" style="border-bottom: 2px solid #667eea; padding-bottom: 20px;">
+                <span class="result-label">CASS/CAS anual:</span>
+                <span class="result-value" id="cass-amount">0,00 RON</span>
+            </div>
+
+            <div class="result-item">
+                <span class="result-label">Venit după CASS/CAS:</span>
+                <span class="result-value" id="net-income">0,00 RON</span>
+            </div>
+
+            <div class="status" id="status-message"></div>
+        </div>
+    </div>
+
+    <script>
+        let rentalIncomeCount = 0;
+        let interestIncomeCount = 0;
+
+        const THRESHOLDS = {
+            min: 6,      // salarii minime - prag minim CASS
+            cas25: 12,   // salarii minime - prag CAS 25%
+            cas24: 24,   // salarii minime - prag superior CAS
+            max: 72      // salarii minime - prag maxim
+        };
+
+        function updateThresholds() {
+            calculateTotal();
+        }
+
+        function addRentalIncome() {
+            rentalIncomeCount++;
+            const container = document.getElementById('rental-income-list');
+            
+            const item = document.createElement('div');
+            item.className = 'income-item';
+            item.id = `rental-${rentalIncomeCount}`;
+            item.innerHTML = `
+                <input type="text" placeholder="Descriere (ex: Apartament Bucuresti)" class="description" oninput="debouncedAutoSave()">
+                <input type="number" placeholder="Venit brut anual (RON)" class="amount" min="0" step="0.01" oninput="debouncedAutoSave()">
+                <button class="btn-remove" onclick="removeIncome('rental-${rentalIncomeCount}')">Șterge</button>
+            `;
+            
+            container.appendChild(item);
+        }
+
+        function addInterestIncome() {
+            interestIncomeCount++;
+            const container = document.getElementById('interest-income-list');
+            
+            const item = document.createElement('div');
+            item.className = 'income-item';
+            item.id = `interest-${interestIncomeCount}`;
+            item.innerHTML = `
+                <input type="text" placeholder="Descriere (ex: Depozit ING)" class="description" oninput="debouncedAutoSave()">
+                <input type="number" placeholder="Venit brut anual (RON)" class="amount" min="0" step="0.01" oninput="debouncedAutoSave()">
+                <button class="btn-remove" onclick="removeIncome('interest-${interestIncomeCount}')">Șterge</button>
+            `;
+            
+            container.appendChild(item);
+        }
+
+        function removeIncome(id) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.remove();
+                autoSave();
+            }
+        }
+
+        function calculateCASSandCAS(income, minSalary) {
+            // Calculează plafoanele în RON
+            const thresholdMin = minSalary * THRESHOLDS.min;      // 6 salarii
+            const thresholdCAS25 = minSalary * THRESHOLDS.cas25;  // 12 salarii
+            const thresholdCAS24 = minSalary * THRESHOLDS.cas24;  // 24 salarii
+            const thresholdMax = minSalary * THRESHOLDS.max;      // 72 salarii
+
+            let cassBase = income;
+            let cassRate = 0;
+            let category = '';
+
+            // Determină categoria și calculează baza + rata
+            if (income < thresholdMin) {
+                // Sub prag minim - se plătește CASS la prag minim
+                cassBase = thresholdMin;
+                cassRate = 10;
+                category = `<strong>Sub prag minim (6 salarii = ${thresholdMin.toLocaleString('ro-RO', {style: 'decimal', minimumFractionDigits: 2})} RON)</strong><br/>
+                            Se plătește CASS la plafonul minim de 10% pe baza de ${thresholdMin.toLocaleString('ro-RO', {style: 'decimal', minimumFractionDigits: 2})} RON.`;
+            } else if (income < thresholdCAS25) {
+                // Între prag minim și 12 salarii - CASS 10% pe venitul real
+                cassBase = income;
+                cassRate = 10;
+                category = `<strong>Prag CASS (6-12 salarii)</strong><br/>
+                            CASS se calculează la 10% pe venitul net realizat de ${income.toLocaleString('ro-RO', {style: 'decimal', minimumFractionDigits: 2})} RON.`;
+            } else if (income < thresholdCAS24) {
+                // Între 12 și 24 salarii - CAS 25% pe 12 salarii minime
+                cassBase = thresholdCAS25;
+                cassRate = 25;
+                category = `<strong>Prag CAS 25% - minim (12-24 salarii)</strong><br/>
+                            La depășirea a 12 salarii minime (${thresholdCAS25.toLocaleString('ro-RO', {style: 'decimal', minimumFractionDigits: 2})} RON), CAS se calculează la 25% pe baza de ${cassBase.toLocaleString('ro-RO', {style: 'decimal', minimumFractionDigits: 2})} RON.`;
+            } else {
+                // Peste 24 salarii - CAS 25% pe 24 salarii minime (plafonul superior)
+                cassBase = Math.min(thresholdCAS24, income);
+                cassRate = 25;
+                category = `<strong>Prag CAS 25% - superior (peste 24 salarii)</strong><br/>
+                            La depășirea a 24 salarii minime (${thresholdCAS24.toLocaleString('ro-RO', {style: 'decimal', minimumFractionDigits: 2})} RON), CAS se calculează la 25% pe baza fixă de ${cassBase.toLocaleString('ro-RO', {style: 'decimal', minimumFractionDigits: 2})} RON.<br/>
+                            <em>Prag maxim total: ${thresholdMax.toLocaleString('ro-RO', {style: 'decimal', minimumFractionDigits: 2})} RON (72 salarii)</em>`;
+            }
+
+            const cassAmount = cassBase * (cassRate / 100);
+
+            return {
+                cassBase,
+                cassRate,
+                cassAmount,
+                category,
+                thresholdMin,
+                thresholdCAS25,
+                thresholdCAS24,
+                thresholdMax
+            };
+        }
+
+        function calculateTotal() {
+            // Get all rental income
+            const rentalItems = document.querySelectorAll('#rental-income-list .income-item');
+            let rentalTotal = 0;
+            rentalItems.forEach(item => {
+                const amount = parseFloat(item.querySelector('.amount').value) || 0;
+                rentalTotal += amount;
+            });
+
+            // Get all interest income
+            const interestItems = document.querySelectorAll('#interest-income-list .income-item');
+            let interestTotal = 0;
+            interestItems.forEach(item => {
+                const amount = parseFloat(item.querySelector('.amount').value) || 0;
+                interestTotal += amount;
+            });
+
+            // Calculate grand total (gross)
+            const grandTotal = rentalTotal + interestTotal;
+
+            // Baza de calcul = 80% din venitul brut (chirii + dobânzi)
+            const taxableBase = grandTotal * 0.80;
+
+            // Get minimum salary
+            const minSalary = parseFloat(document.getElementById('minSalary').value) || 4050;
+
+            // Calculate CASS/CAS on 80% taxable base
+            const cassData = calculateCASSandCAS(taxableBase, minSalary);
+
+            // Format numbers
+            const formatter = new Intl.NumberFormat('ro-RO', {
+                style: 'decimal',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+
+            // Update results
+            document.getElementById('rental-total').textContent = formatter.format(rentalTotal) + ' RON';
+            document.getElementById('interest-total').textContent = formatter.format(interestTotal) + ' RON';
+            document.getElementById('grand-total').textContent = formatter.format(grandTotal) + ' RON';
+            document.getElementById('taxable-base').textContent = formatter.format(taxableBase) + ' RON';
+            
+            document.getElementById('threshold-6').textContent = formatter.format(cassData.thresholdMin) + ' RON';
+            document.getElementById('threshold-12').textContent = formatter.format(cassData.thresholdCAS25) + ' RON';
+            document.getElementById('threshold-24').textContent = formatter.format(cassData.thresholdCAS24) + ' RON';
+            document.getElementById('threshold-72').textContent = formatter.format(cassData.thresholdMax) + ' RON';
+
+            document.getElementById('cass-category').innerHTML = cassData.category;
+            document.getElementById('cass-base').textContent = formatter.format(cassData.cassBase) + ' RON';
+            document.getElementById('cass-rate').textContent = cassData.cassRate + '%';
+            document.getElementById('cass-amount').textContent = formatter.format(cassData.cassAmount) + ' RON';
+
+            const netIncome = grandTotal - cassData.cassAmount;
+            document.getElementById('net-income').textContent = formatter.format(netIncome) + ' RON';
+
+            // Determine status
+            const statusElement = document.getElementById('status-message');
+            if (grandTotal === 0) {
+                statusElement.textContent = '⚠️ Introduceți venituri pentru a calcula';
+                statusElement.className = 'status warning';
+            } else if (taxableBase < cassData.thresholdMin) {
+                statusElement.innerHTML = `✅ Baza 80% (${formatter.format(taxableBase)} RON) sub prag minim! CASS (10%) se calculează pe ${formatter.format(cassData.thresholdMin)} RON = ${formatter.format(cassData.cassAmount)} RON/an.`;
+                statusElement.className = 'status ok';
+            } else if (taxableBase < cassData.thresholdCAS25) {
+                statusElement.innerHTML = `✅ Baza 80% în zona CASS! CASS (10%) = ${formatter.format(cassData.cassAmount)} RON/an.<br/>Dacă baza 80% depășește ${formatter.format(cassData.thresholdCAS25)} RON, vei plăti CAS 25%.`;
+                statusElement.className = 'status ok';
+            } else {
+                statusElement.innerHTML = `⚠️ Baza 80% depășește 12 salarii minime. Plătești CAS 25% = ${formatter.format(cassData.cassAmount)} RON/an.`;
+                statusElement.className = 'status warning';
+            }
+
+            // Auto-save after calculation
+            autoSave();
+
+            // Show results
+            document.getElementById('results').classList.add('show');
+        }
+
+        // Add initial empty items
+        addRentalIncome();
+        addInterestIncome();
+
+        // Load data on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            loadData();
+        });
+
+        let autoSaveTimer = null;
+
+        function collectData() {
+            const minSalary = document.getElementById('minSalary').value;
+
+            const rentalItems = document.querySelectorAll('#rental-income-list .income-item');
+            const rentalData = [];
+            rentalItems.forEach(item => {
+                rentalData.push({
+                    description: item.querySelector('.description').value,
+                    amount: item.querySelector('.amount').value
+                });
+            });
+
+            const interestItems = document.querySelectorAll('#interest-income-list .income-item');
+            const interestData = [];
+            interestItems.forEach(item => {
+                interestData.push({
+                    description: item.querySelector('.description').value,
+                    amount: item.querySelector('.amount').value
+                });
+            });
+
+            return {
+                minSalary,
+                rentalData,
+                interestData,
+                savedDate: new Date().toLocaleString('ro-RO')
+            };
+        }
+
+        function autoSave() {
+            const data = collectData();
+            localStorage.setItem('cassCalculatorData', JSON.stringify(data));
+            const indicator = document.getElementById('save-indicator');
+            if (indicator) {
+                indicator.textContent = '💾 Salvat automat: ' + data.savedDate;
+                indicator.style.display = 'block';
+            }
+        }
+
+        function debouncedAutoSave() {
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(autoSave, 800);
+        }
+
+        function saveData() {
+            autoSave();
+            const savedDate = document.getElementById('save-indicator').textContent;
+            alert('✅ Datele au fost salvate cu succes!\n\n' + savedDate);
+        }
+
+        function toggleDataPanel() {
+            const panel = document.getElementById('data-panel');
+            panel.classList.toggle('show');
+            if (panel.classList.contains('show')) {
+                renderDataPanel();
+            }
+        }
+
+        function renderDataPanel() {
+            const raw = localStorage.getItem('cassCalculatorData');
+            const content = document.getElementById('data-panel-content');
+
+            if (!raw) {
+                content.innerHTML = '<p class="no-data-msg">Nu există date salvate.</p>';
+                return;
+            }
+
+            const data = JSON.parse(raw);
+            const formatter = new Intl.NumberFormat('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            let html = `<p style="font-size:12px;color:#666;margin-bottom:10px;">Ultima salvare: <strong>${data.savedDate || '—'}</strong> &nbsp;|&nbsp; Salariu minim: <strong>${data.minSalary} RON</strong></p>`;
+
+            // Rental table
+            html += `<h4 style="font-size:13px;color:#667eea;margin-bottom:6px;">Chirii (${(data.rentalData || []).length} înregistrări)</h4>`;
+            if (data.rentalData && data.rentalData.length > 0) {
+                html += `<table class="data-table"><thead><tr><th>#</th><th>Descriere</th><th>Venit brut (RON)</th><th>Bază 80% (RON)</th></tr></thead><tbody>`;
+                let rentalSum = 0;
+                data.rentalData.forEach((item, i) => {
+                    const amt = parseFloat(item.amount) || 0;
+                    rentalSum += amt;
+                    html += `<tr><td>${i + 1}</td><td>${item.description || '—'}</td><td>${formatter.format(amt)}</td><td>${formatter.format(amt * 0.8)}</td></tr>`;
+                });
+                html += `<tr><td colspan="2" style="font-weight:700;">Total chirii</td><td style="font-weight:700;">${formatter.format(rentalSum)}</td><td style="font-weight:700;color:#e67700;">${formatter.format(rentalSum * 0.8)}</td></tr>`;
+                html += '</tbody></table>';
+            } else {
+                html += '<p class="no-data-msg">—</p>';
+            }
+
+            // Interest table
+            html += `<h4 style="font-size:13px;color:#667eea;margin:12px 0 6px;">Dobânzi (${(data.interestData || []).length} înregistrări)</h4>`;
+            if (data.interestData && data.interestData.length > 0) {
+                html += `<table class="data-table"><thead><tr><th>#</th><th>Descriere</th><th>Venit brut (RON)</th><th>Bază 80% (RON)</th></tr></thead><tbody>`;
+                let interestSum = 0;
+                data.interestData.forEach((item, i) => {
+                    const amt = parseFloat(item.amount) || 0;
+                    interestSum += amt;
+                    html += `<tr><td>${i + 1}</td><td>${item.description || '—'}</td><td>${formatter.format(amt)}</td><td>${formatter.format(amt * 0.8)}</td></tr>`;
+                });
+                html += `<tr><td colspan="2" style="font-weight:700;">Total dobânzi</td><td style="font-weight:700;">${formatter.format(interestSum)}</td><td style="font-weight:700;color:#e67700;">${formatter.format(interestSum * 0.8)}</td></tr>`;
+                html += '</tbody></table>';
+            } else {
+                html += '<p class="no-data-msg">—</p>';
+            }
+
+            content.innerHTML = html;
+        }
+
+        function exportJSON() {
+            const raw = localStorage.getItem('cassCalculatorData');
+            if (!raw) { alert('Nu există date salvate de exportat.'); return; }
+            const blob = new Blob([JSON.stringify(JSON.parse(raw), null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'cass-venituri-' + new Date().toISOString().slice(0, 10) + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!data.rentalData || !data.interestData) throw new Error('Format invalid');
+                    localStorage.setItem('cassCalculatorData', JSON.stringify(data));
+                    loadData();
+                    renderDataPanel();
+                    const indicator = document.getElementById('save-indicator');
+                    indicator.textContent = '📂 Date importate din fișier: ' + (data.savedDate || file.name);
+                    indicator.style.display = 'block';
+                    alert('✅ Date importate cu succes din ' + file.name);
+                } catch (err) {
+                    alert('❌ Fișierul nu este valid. Asigurați-vă că exportați din această aplicație.');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function loadData() {
+            const savedData = localStorage.getItem('cassCalculatorData');
+            
+            if (!savedData) {
+                console.log('No saved data found');
+                return;
+            }
+
+            try {
+                const data = JSON.parse(savedData);
+
+                // Load min salary
+                document.getElementById('minSalary').value = data.minSalary || 4050;
+
+                // Clear existing items
+                document.getElementById('rental-income-list').innerHTML = '';
+                document.getElementById('interest-income-list').innerHTML = '';
+
+                // Load rental data
+                if (data.rentalData && data.rentalData.length > 0) {
+                    data.rentalData.forEach(item => {
+                        addRentalIncome();
+                        const lastItem = document.querySelector('#rental-income-list .income-item:last-child');
+                        if (lastItem) {
+                            lastItem.querySelector('.description').value = item.description || '';
+                            lastItem.querySelector('.amount').value = item.amount || '';
+                        }
+                    });
+                } else {
+                    addRentalIncome();
+                }
+
+                // Load interest data
+                if (data.interestData && data.interestData.length > 0) {
+                    data.interestData.forEach(item => {
+                        addInterestIncome();
+                        const lastItem = document.querySelector('#interest-income-list .income-item:last-child');
+                        if (lastItem) {
+                            lastItem.querySelector('.description').value = item.description || '';
+                            lastItem.querySelector('.amount').value = item.amount || '';
+                        }
+                    });
+                } else {
+                    addInterestIncome();
+                }
+
+                console.log('Data loaded successfully from:', data.savedDate);
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+
+        function clearData() {
+            if (confirm('⚠️ Ești sigur că vrei să ștergi datele salvate? Această acțiune nu se poate anula!')) {
+                localStorage.removeItem('cassCalculatorData');
+                alert('✅ Datele salvate au fost șterse.');
+                
+                // Reset form
+                document.getElementById('rental-income-list').innerHTML = '';
+                document.getElementById('interest-income-list').innerHTML = '';
+                document.getElementById('results').classList.remove('show');
+                addRentalIncome();
+                addInterestIncome();
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize with empty items if no saved data
+            const savedData = localStorage.getItem('cassCalculatorData');
+            if (!savedData) {
+                addRentalIncome();
+                addInterestIncome();
+            } else {
+                loadData();
+            }
+        });
+    </script>
+</body>
+</html>
