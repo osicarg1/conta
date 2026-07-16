@@ -1,5 +1,9 @@
 name = "cass-calculator"
 compatibility_date = "2026-07-16"
+main = "src/index.js"
+
+[assets]
+directory = "."
 
 [[kv_namespaces]]
 binding = "CASS_DATA"

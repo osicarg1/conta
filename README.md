@@ -1,14 +1,14 @@
 # CASS Calculator - Cloudflare Deployment
 
-This project is now configured for Cloudflare Pages + Functions with KV persistence.
+This project is now configured for Cloudflare Workers + static assets + KV persistence.
 
-## Why data was not persistent - 
+## Why data was not persistent
 
 In-memory values are reset across requests/deploys. Browser localStorage is per device/browser only. Persistent shared storage on Cloudflare requires KV, D1, or Durable Objects.
 
 This app uses:
-- Cloudflare Pages for hosting
-- Cloudflare Functions for API route `/api/data/:id`
+- Cloudflare Worker (`src/index.js`) for API route `/api/data/:id`
+- Worker static assets (`index.html` and project files)
 - Cloudflare KV (`CASS_DATA`) for persistence
 
 ## 1) Install Wrangler
@@ -35,7 +35,7 @@ Copy the returned `id` and `preview_id` into [wrangler.toml](wrangler.toml).
 ## 4) Run locally
 
 ```powershell
-wrangler pages dev .
+wrangler dev
 ```
 
 Open the local URL and verify Save/Load works.
@@ -43,7 +43,7 @@ Open the local URL and verify Save/Load works.
 ## 5) Deploy
 
 ```powershell
-wrangler pages deploy .
+wrangler deploy
 ```
 
 ## Notes
