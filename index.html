@@ -312,7 +312,7 @@
         <p class="subtitle">Calculează veniturile și taxele CASS conform plafoanelor</p>
 
         <div class="info-box">
-            ℹ️ <strong>Informație:</strong> Introduceți veniturile <strong>brute</strong> anuale din chirii și dobânzi. Baza de calcul CASS/CAS este <strong>80% din venitul brut</strong>, conform legislației în vigoare. Datele se salvează local în browser și pot fi sincronizate în Cloudflare pentru persistență.
+            ℹ️ <strong>Informație:</strong> Pentru chirii, impozitul este 10% aplicat la venitul net (80% din brut). Pentru dobânzi, impozitul este 10% și este reținut la sursă de bancă. CASS este 10% doar dacă totalul veniturilor (chirii + dobânzi + alte surse fără salariu) trece de pragurile de 6/12/24 salarii minime.
         </div>
 
         <div class="form-group">
@@ -341,6 +341,12 @@
             <h3 style="margin-bottom: 15px; color: #333; font-size: 16px;">Venituri din dobânzi</h3>
             <div id="interest-income-list"></div>
             <button class="btn-add" onclick="addInterestIncome()">+ Adaugă venit din dobânzi</button>
+        </div>
+
+        <div class="income-section">
+            <h3 style="margin-bottom: 15px; color: #333; font-size: 16px;">Alte venituri (fără salariu)</h3>
+            <div id="other-income-list"></div>
+            <button class="btn-add" onclick="addOtherIncome()">+ Adaugă alt venit</button>
         </div>
 
         <div id="save-indicator" style="display:none; background:#d3f9d8; color:#2f9e44; border-radius:5px; padding:8px 12px; font-size:13px; margin-bottom:10px; text-align:center;"></div>
@@ -378,13 +384,29 @@
                 <span class="result-label">Total venituri din dobânzi:</span>
                 <span class="result-value" id="interest-total">0,00 RON</span>
             </div>
+            <div class="result-item">
+                <span class="result-label">Total alte venituri (fără salariu):</span>
+                <span class="result-value" id="other-total">0,00 RON</span>
+            </div>
             <div class="result-item" style="border-bottom: 2px solid #667eea; padding-bottom: 20px;">
                 <span class="result-label">TOTAL VENITURI BRUTE ANUALE:</span>
                 <span class="result-value" id="grand-total">0,00 RON</span>
             </div>
             <div class="result-item" style="background: #fff9db; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
-                <span class="result-label">📐 Bază de calcul (80% din brut):</span>
+                <span class="result-label">📐 Venit net chirii (80% din brut):</span>
                 <span class="result-value" id="taxable-base" style="color: #e67700;">0,00 RON</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Impozit chirii (10% din venitul net):</span>
+                <span class="result-value" id="rental-tax">0,00 RON</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Impozit dobânzi (10% reținut de bancă):</span>
+                <span class="result-value" id="interest-tax">0,00 RON</span>
+            </div>
+            <div class="result-item" style="border-bottom: 2px solid #667eea; padding-bottom: 20px;">
+                <span class="result-label">Total impozit venit:</span>
+                <span class="result-value" id="income-tax-total">0,00 RON</span>
             </div>
             
             <div style="background: white; padding: 15px; border-radius: 5px; margin: 15px 0;">
@@ -394,16 +416,12 @@
                     <span class="result-value" id="threshold-6">24.300,00 RON</span>
                 </div>
                 <div class="result-item">
-                    <span class="result-label">Prag CAS 25% (12 salarii):</span>
+                    <span class="result-label">Prag CASS (12 salarii):</span>
                     <span class="result-value" id="threshold-12">48.600,00 RON</span>
                 </div>
                 <div class="result-item">
-                    <span class="result-label">Prag superior CAS (24 salarii):</span>
+                    <span class="result-label">Prag CASS superior (24 salarii):</span>
                     <span class="result-value" id="threshold-24">97.200,00 RON</span>
-                </div>
-                <div class="result-item" style="border-bottom: none;">
-                    <span class="result-label">Prag maxim (72 salarii):</span>
-                    <span class="result-value" id="threshold-72">291.600,00 RON</span>
                 </div>
             </div>
 
@@ -413,20 +431,24 @@
             </div>
 
             <div class="result-item">
-                <span class="result-label">Bază calcul CASS/CAS (după plafoane):</span>
+                <span class="result-label">Total venituri relevante CASS:</span>
+                <span class="result-value" id="cass-relevant-total">0,00 RON</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Bază calcul CASS (după plafoane):</span>
                 <span class="result-value" id="cass-base">0,00 RON</span>
             </div>
             <div class="result-item">
-                <span class="result-label">Rata CASS/CAS:</span>
+                <span class="result-label">Rata CASS:</span>
                 <span class="result-value" id="cass-rate">0%</span>
             </div>
             <div class="result-item" style="border-bottom: 2px solid #667eea; padding-bottom: 20px;">
-                <span class="result-label">CASS/CAS anual:</span>
+                <span class="result-label">CASS anual:</span>
                 <span class="result-value" id="cass-amount">0,00 RON</span>
             </div>
 
             <div class="result-item">
-                <span class="result-label">Venit după CASS/CAS:</span>
+                <span class="result-label">Venit după impozit + CASS:</span>
                 <span class="result-value" id="net-income">0,00 RON</span>
             </div>
 
@@ -437,14 +459,14 @@
     <script>
         let rentalIncomeCount = 0;
         let interestIncomeCount = 0;
+        let otherIncomeCount = 0;
         const LOCAL_STORAGE_KEY = 'cassCalculatorData';
         const CLIENT_ID_KEY = 'cassCalculatorClientId';
 
         const THRESHOLDS = {
-            min: 6,      // salarii minime - prag minim CASS
-            cas25: 12,   // salarii minime - prag CAS 25%
-            cas24: 24,   // salarii minime - prag superior CAS
-            max: 72      // salarii minime - prag maxim
+            min: 6,
+            mid: 12,
+            high: 24
         };
 
         function updateThresholds() {
@@ -483,6 +505,22 @@
             container.appendChild(item);
         }
 
+        function addOtherIncome() {
+            otherIncomeCount++;
+            const container = document.getElementById('other-income-list');
+
+            const item = document.createElement('div');
+            item.className = 'income-item';
+            item.id = `other-${otherIncomeCount}`;
+            item.innerHTML = `
+                <input type="text" placeholder="Descriere (ex: Dividende, crypto, PFA)" class="description" oninput="debouncedAutoSave()">
+                <input type="number" placeholder="Venit anual (RON)" class="amount" min="0" step="0.01" oninput="debouncedAutoSave()">
+                <button class="btn-remove" onclick="removeIncome('other-${otherIncomeCount}')">Șterge</button>
+            `;
+
+            container.appendChild(item);
+        }
+
         function removeIncome(id) {
             const element = document.getElementById(id);
             if (element) {
@@ -491,43 +529,31 @@
             }
         }
 
-        function calculateCASSandCAS(income, minSalary) {
-            // Calculează plafoanele în RON
-            const thresholdMin = minSalary * THRESHOLDS.min;      // 6 salarii
-            const thresholdCAS25 = minSalary * THRESHOLDS.cas25;  // 12 salarii
-            const thresholdCAS24 = minSalary * THRESHOLDS.cas24;  // 24 salarii
-            const thresholdMax = minSalary * THRESHOLDS.max;      // 72 salarii
+        function calculateCASS(totalIncomeForCass, minSalary) {
+            const thresholdMin = minSalary * THRESHOLDS.min;
+            const thresholdMid = minSalary * THRESHOLDS.mid;
+            const thresholdHigh = minSalary * THRESHOLDS.high;
 
-            let cassBase = income;
+            let cassBase = 0;
             let cassRate = 0;
             let category = '';
 
-            // Determină categoria și calculează baza + rata
-            if (income < thresholdMin) {
-                // Sub prag minim - se plătește CASS la prag minim
+            if (totalIncomeForCass < thresholdMin) {
+                cassBase = 0;
+                cassRate = 0;
+                category = `<strong>Sub pragul minim (6 salarii)</strong><br/>Nu se datorează CASS.`;
+            } else if (totalIncomeForCass < thresholdMid) {
                 cassBase = thresholdMin;
                 cassRate = 10;
-                category = `<strong>Sub prag minim (6 salarii = ${thresholdMin.toLocaleString('ro-RO', {style: 'decimal', minimumFractionDigits: 2})} RON)</strong><br/>
-                            Se plătește CASS la plafonul minim de 10% pe baza de ${thresholdMin.toLocaleString('ro-RO', {style: 'decimal', minimumFractionDigits: 2})} RON.`;
-            } else if (income < thresholdCAS25) {
-                // Între prag minim și 12 salarii - CASS 10% pe venitul real
-                cassBase = income;
+                category = `<strong>Între 6 și 12 salarii minime</strong><br/>CASS este 10% aplicat la baza de 6 salarii minime.`;
+            } else if (totalIncomeForCass < thresholdHigh) {
+                cassBase = thresholdMid;
                 cassRate = 10;
-                category = `<strong>Prag CASS (6-12 salarii)</strong><br/>
-                            CASS se calculează la 10% pe venitul net realizat de ${income.toLocaleString('ro-RO', {style: 'decimal', minimumFractionDigits: 2})} RON.`;
-            } else if (income < thresholdCAS24) {
-                // Între 12 și 24 salarii - CAS 25% pe 12 salarii minime
-                cassBase = thresholdCAS25;
-                cassRate = 25;
-                category = `<strong>Prag CAS 25% - minim (12-24 salarii)</strong><br/>
-                            La depășirea a 12 salarii minime (${thresholdCAS25.toLocaleString('ro-RO', {style: 'decimal', minimumFractionDigits: 2})} RON), CAS se calculează la 25% pe baza de ${cassBase.toLocaleString('ro-RO', {style: 'decimal', minimumFractionDigits: 2})} RON.`;
+                category = `<strong>Între 12 și 24 salarii minime</strong><br/>CASS este 10% aplicat la baza de 12 salarii minime.`;
             } else {
-                // Peste 24 salarii - CAS 25% pe 24 salarii minime (plafonul superior)
-                cassBase = Math.min(thresholdCAS24, income);
-                cassRate = 25;
-                category = `<strong>Prag CAS 25% - superior (peste 24 salarii)</strong><br/>
-                            La depășirea a 24 salarii minime (${thresholdCAS24.toLocaleString('ro-RO', {style: 'decimal', minimumFractionDigits: 2})} RON), CAS se calculează la 25% pe baza fixă de ${cassBase.toLocaleString('ro-RO', {style: 'decimal', minimumFractionDigits: 2})} RON.<br/>
-                            <em>Prag maxim total: ${thresholdMax.toLocaleString('ro-RO', {style: 'decimal', minimumFractionDigits: 2})} RON (72 salarii)</em>`;
+                cassBase = thresholdHigh;
+                cassRate = 10;
+                category = `<strong>Peste 24 salarii minime</strong><br/>CASS este 10% aplicat la baza de 24 salarii minime.`;
             }
 
             const cassAmount = cassBase * (cassRate / 100);
@@ -538,9 +564,8 @@
                 cassAmount,
                 category,
                 thresholdMin,
-                thresholdCAS25,
-                thresholdCAS24,
-                thresholdMax
+                thresholdMid,
+                thresholdHigh
             };
         }
 
@@ -561,17 +586,26 @@
                 interestTotal += amount;
             });
 
-            // Calculate grand total (gross)
-            const grandTotal = rentalTotal + interestTotal;
+            // Get all other income
+            const otherItems = document.querySelectorAll('#other-income-list .income-item');
+            let otherTotal = 0;
+            otherItems.forEach(item => {
+                const amount = parseFloat(item.querySelector('.amount').value) || 0;
+                otherTotal += amount;
+            });
 
-            // Baza de calcul = 80% din venitul brut (chirii + dobânzi)
-            const taxableBase = grandTotal * 0.80;
+            // Calculate totals and taxes according to requested rules
+            const grandTotal = rentalTotal + interestTotal + otherTotal;
+            const taxableBase = rentalTotal * 0.80;
+            const rentalTax = taxableBase * 0.10;
+            const interestTax = interestTotal * 0.10;
+            const incomeTaxTotal = rentalTax + interestTax;
+            const totalIncomeForCass = grandTotal;
 
             // Get minimum salary
             const minSalary = parseFloat(document.getElementById('minSalary').value) || 4050;
 
-            // Calculate CASS/CAS on 80% taxable base
-            const cassData = calculateCASSandCAS(taxableBase, minSalary);
+            const cassData = calculateCASS(totalIncomeForCass, minSalary);
 
             // Format numbers
             const formatter = new Intl.NumberFormat('ro-RO', {
@@ -583,20 +617,24 @@
             // Update results
             document.getElementById('rental-total').textContent = formatter.format(rentalTotal) + ' RON';
             document.getElementById('interest-total').textContent = formatter.format(interestTotal) + ' RON';
+            document.getElementById('other-total').textContent = formatter.format(otherTotal) + ' RON';
             document.getElementById('grand-total').textContent = formatter.format(grandTotal) + ' RON';
             document.getElementById('taxable-base').textContent = formatter.format(taxableBase) + ' RON';
+            document.getElementById('rental-tax').textContent = formatter.format(rentalTax) + ' RON';
+            document.getElementById('interest-tax').textContent = formatter.format(interestTax) + ' RON';
+            document.getElementById('income-tax-total').textContent = formatter.format(incomeTaxTotal) + ' RON';
             
             document.getElementById('threshold-6').textContent = formatter.format(cassData.thresholdMin) + ' RON';
-            document.getElementById('threshold-12').textContent = formatter.format(cassData.thresholdCAS25) + ' RON';
-            document.getElementById('threshold-24').textContent = formatter.format(cassData.thresholdCAS24) + ' RON';
-            document.getElementById('threshold-72').textContent = formatter.format(cassData.thresholdMax) + ' RON';
+            document.getElementById('threshold-12').textContent = formatter.format(cassData.thresholdMid) + ' RON';
+            document.getElementById('threshold-24').textContent = formatter.format(cassData.thresholdHigh) + ' RON';
 
             document.getElementById('cass-category').innerHTML = cassData.category;
+            document.getElementById('cass-relevant-total').textContent = formatter.format(totalIncomeForCass) + ' RON';
             document.getElementById('cass-base').textContent = formatter.format(cassData.cassBase) + ' RON';
             document.getElementById('cass-rate').textContent = cassData.cassRate + '%';
             document.getElementById('cass-amount').textContent = formatter.format(cassData.cassAmount) + ' RON';
 
-            const netIncome = grandTotal - cassData.cassAmount;
+            const netIncome = grandTotal - incomeTaxTotal - cassData.cassAmount;
             document.getElementById('net-income').textContent = formatter.format(netIncome) + ' RON';
 
             // Determine status
@@ -604,14 +642,17 @@
             if (grandTotal === 0) {
                 statusElement.textContent = '⚠️ Introduceți venituri pentru a calcula';
                 statusElement.className = 'status warning';
-            } else if (taxableBase < cassData.thresholdMin) {
-                statusElement.innerHTML = `✅ Baza 80% (${formatter.format(taxableBase)} RON) sub prag minim! CASS (10%) se calculează pe ${formatter.format(cassData.thresholdMin)} RON = ${formatter.format(cassData.cassAmount)} RON/an.`;
+            } else if (totalIncomeForCass < cassData.thresholdMin) {
+                statusElement.innerHTML = `✅ Total venituri (${formatter.format(totalIncomeForCass)} RON) sub 6 salarii minime. Nu plătești CASS.`;
                 statusElement.className = 'status ok';
-            } else if (taxableBase < cassData.thresholdCAS25) {
-                statusElement.innerHTML = `✅ Baza 80% în zona CASS! CASS (10%) = ${formatter.format(cassData.cassAmount)} RON/an.<br/>Dacă baza 80% depășește ${formatter.format(cassData.thresholdCAS25)} RON, vei plăti CAS 25%.`;
+            } else if (totalIncomeForCass < cassData.thresholdMid) {
+                statusElement.innerHTML = `⚠️ Total venituri între 6 și 12 salarii minime. CASS = 10% x 6 salarii minime = ${formatter.format(cassData.cassAmount)} RON/an.`;
                 statusElement.className = 'status ok';
+            } else if (totalIncomeForCass < cassData.thresholdHigh) {
+                statusElement.innerHTML = `⚠️ Total venituri între 12 și 24 salarii minime. CASS = 10% x 12 salarii minime = ${formatter.format(cassData.cassAmount)} RON/an.`;
+                statusElement.className = 'status warning';
             } else {
-                statusElement.innerHTML = `⚠️ Baza 80% depășește 12 salarii minime. Plătești CAS 25% = ${formatter.format(cassData.cassAmount)} RON/an.`;
+                statusElement.innerHTML = `⚠️ Total venituri peste 24 salarii minime. CASS = 10% x 24 salarii minime = ${formatter.format(cassData.cassAmount)} RON/an.`;
                 statusElement.className = 'status warning';
             }
 
@@ -656,10 +697,20 @@
                 });
             });
 
+            const otherItems = document.querySelectorAll('#other-income-list .income-item');
+            const otherData = [];
+            otherItems.forEach(item => {
+                otherData.push({
+                    description: item.querySelector('.description').value,
+                    amount: item.querySelector('.amount').value
+                });
+            });
+
             return {
                 minSalary,
                 rentalData,
                 interestData,
+                otherData,
                 savedDate: new Date().toLocaleString('ro-RO')
             };
         }
@@ -761,14 +812,30 @@
             // Interest table
             html += `<h4 style="font-size:13px;color:#667eea;margin:12px 0 6px;">Dobânzi (${(data.interestData || []).length} înregistrări)</h4>`;
             if (data.interestData && data.interestData.length > 0) {
-                html += `<table class="data-table"><thead><tr><th>#</th><th>Descriere</th><th>Venit brut (RON)</th><th>Bază 80% (RON)</th></tr></thead><tbody>`;
+                html += `<table class="data-table"><thead><tr><th>#</th><th>Descriere</th><th>Venit brut (RON)</th><th>Impozit 10% (RON)</th></tr></thead><tbody>`;
                 let interestSum = 0;
                 data.interestData.forEach((item, i) => {
                     const amt = parseFloat(item.amount) || 0;
                     interestSum += amt;
-                    html += `<tr><td>${i + 1}</td><td>${item.description || '—'}</td><td>${formatter.format(amt)}</td><td>${formatter.format(amt * 0.8)}</td></tr>`;
+                    html += `<tr><td>${i + 1}</td><td>${item.description || '—'}</td><td>${formatter.format(amt)}</td><td>${formatter.format(amt * 0.1)}</td></tr>`;
                 });
-                html += `<tr><td colspan="2" style="font-weight:700;">Total dobânzi</td><td style="font-weight:700;">${formatter.format(interestSum)}</td><td style="font-weight:700;color:#e67700;">${formatter.format(interestSum * 0.8)}</td></tr>`;
+                html += `<tr><td colspan="2" style="font-weight:700;">Total dobânzi</td><td style="font-weight:700;">${formatter.format(interestSum)}</td><td style="font-weight:700;color:#e67700;">${formatter.format(interestSum * 0.1)}</td></tr>`;
+                html += '</tbody></table>';
+            } else {
+                html += '<p class="no-data-msg">—</p>';
+            }
+
+            // Other income table
+            html += `<h4 style="font-size:13px;color:#667eea;margin:12px 0 6px;">Alte surse (${(data.otherData || []).length} înregistrări)</h4>`;
+            if (data.otherData && data.otherData.length > 0) {
+                html += `<table class="data-table"><thead><tr><th>#</th><th>Descriere</th><th>Venit (RON)</th></tr></thead><tbody>`;
+                let otherSum = 0;
+                data.otherData.forEach((item, i) => {
+                    const amt = parseFloat(item.amount) || 0;
+                    otherSum += amt;
+                    html += `<tr><td>${i + 1}</td><td>${item.description || '—'}</td><td>${formatter.format(amt)}</td></tr>`;
+                });
+                html += `<tr><td colspan="2" style="font-weight:700;">Total alte surse</td><td style="font-weight:700;">${formatter.format(otherSum)}</td></tr>`;
                 html += '</tbody></table>';
             } else {
                 html += '<p class="no-data-msg">—</p>';
@@ -797,6 +864,7 @@
                 try {
                     const data = JSON.parse(e.target.result);
                     if (!data.rentalData || !data.interestData) throw new Error('Format invalid');
+                    if (!data.otherData) data.otherData = [];
                     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
                     loadData();
                     renderDataPanel();
@@ -823,9 +891,11 @@
             // Clear existing items
             document.getElementById('rental-income-list').innerHTML = '';
             document.getElementById('interest-income-list').innerHTML = '';
+            document.getElementById('other-income-list').innerHTML = '';
 
             rentalIncomeCount = 0;
             interestIncomeCount = 0;
+            otherIncomeCount = 0;
 
             // Load rental data
             if (data.rentalData && data.rentalData.length > 0) {
@@ -853,6 +923,20 @@
                 });
             } else {
                 addInterestIncome();
+            }
+
+            // Load other income data
+            if (data.otherData && data.otherData.length > 0) {
+                data.otherData.forEach(item => {
+                    addOtherIncome();
+                    const lastItem = document.querySelector('#other-income-list .income-item:last-child');
+                    if (lastItem) {
+                        lastItem.querySelector('.description').value = item.description || '';
+                        lastItem.querySelector('.amount').value = item.amount || '';
+                    }
+                });
+            } else {
+                addOtherIncome();
             }
 
             return true;
@@ -896,10 +980,13 @@
             if (!localLoaded) {
                 document.getElementById('rental-income-list').innerHTML = '';
                 document.getElementById('interest-income-list').innerHTML = '';
+                document.getElementById('other-income-list').innerHTML = '';
                 rentalIncomeCount = 0;
                 interestIncomeCount = 0;
+                otherIncomeCount = 0;
                 addRentalIncome();
                 addInterestIncome();
+                addOtherIncome();
             }
         }
 
@@ -911,11 +998,14 @@
                 // Reset form
                 document.getElementById('rental-income-list').innerHTML = '';
                 document.getElementById('interest-income-list').innerHTML = '';
+                document.getElementById('other-income-list').innerHTML = '';
                 document.getElementById('results').classList.remove('show');
                 rentalIncomeCount = 0;
                 interestIncomeCount = 0;
+                otherIncomeCount = 0;
                 addRentalIncome();
                 addInterestIncome();
+                addOtherIncome();
             }
         }
 
