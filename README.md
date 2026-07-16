@@ -2,7 +2,7 @@
 
 This project is now configured for Cloudflare Pages + Functions with KV persistence.
 
-## Why data was not persistent
+## Why data was not persistent - 
 
 In-memory values are reset across requests/deploys. Browser localStorage is per device/browser only. Persistent shared storage on Cloudflare requires KV, D1, or Durable Objects.
 
