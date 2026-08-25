@@ -49,6 +49,14 @@ export async function onRequestPut(context) {
     return jsonResponse({ error: "Invalid payload shape" }, 400);
   }
 
+  if (!Array.isArray(payload.depositData)) {
+    payload.depositData = [];
+  }
+
+  if (!Array.isArray(payload.otherData)) {
+    payload.otherData = [];
+  }
+
   await env.CASS_DATA.put(id, JSON.stringify(payload));
   return jsonResponse({ ok: true, id });
 }

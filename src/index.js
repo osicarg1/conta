@@ -46,6 +46,10 @@ async function handleApi(request, env, pathname) {
       return jsonResponse({ error: "Invalid payload shape" }, 400);
     }
 
+    if (!Array.isArray(payload.depositData)) {
+      payload.depositData = [];
+    }
+
     if (!Array.isArray(payload.otherData)) {
       payload.otherData = [];
     }

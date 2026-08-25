@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculator Venituri - CASS</title>
+    <meta name="theme-color" content="#667eea">
+    <link rel="manifest" href="manifest.webmanifest">
+    <title>Calculator Venituri - Impozit, CAS, CASS</title>
     <style>
         * {
             margin: 0;
@@ -95,6 +97,14 @@
         .income-item {
             display: grid;
             grid-template-columns: 1fr 1fr auto;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: end;
+        }
+
+        .deposit-item {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr 1fr 1fr auto;
             gap: 10px;
             margin-bottom: 15px;
             align-items: end;
@@ -300,6 +310,10 @@
                 grid-template-columns: 1fr;
             }
 
+            .deposit-item {
+                grid-template-columns: 1fr;
+            }
+
             h1 {
                 font-size: 22px;
             }
@@ -308,11 +322,11 @@
 </head>
 <body>
     <div class="container">
-        <h1>💰 Calculator Venituri CASS 2026</h1>
-        <p class="subtitle">Calculează veniturile și taxele CASS conform plafoanelor</p>
+        <h1>💰 Calculator Venituri 2026</h1>
+        <p class="subtitle">Calculează impozit, CAS și CASS pentru chirii și dobânzi</p>
 
         <div class="info-box">
-            ℹ️ <strong>Informație:</strong> Pentru chirii, impozitul este 10% aplicat la venitul net (80% din brut). Pentru dobânzi, impozitul este 10% și este reținut la sursă de bancă. CASS este 10% doar dacă totalul veniturilor (chirii + dobânzi + alte surse fără salariu) trece de pragurile de 6/12/24 salarii minime.
+            ℹ️ <strong>Informație:</strong> Pentru chirii, impozitul este 10% aplicat la venitul net (80% din brut). Pentru dobânzi, impozitul este 10% și este reținut la sursă de bancă. CAS nu se datorează pentru venituri din chirii și dobânzi. CASS este 10% doar dacă totalul veniturilor relevante (chirii + dobânzi + alte surse fără salariu) trece de pragurile de 6/12/24 salarii minime.
         </div>
 
         <div class="form-group">
@@ -329,6 +343,13 @@
             <div class="threshold-info">
                 💡 Actualizare salariu minim (2026): 4.050 RON. Plafoanele se calculează ca multipli ai acestuia.
             </div>
+        </div>
+
+        <div class="income-section">
+            <h3 style="margin-bottom: 15px; color: #333; font-size: 16px;">Depozite bancare (calcul automat dobândă)</h3>
+            <p style="font-size: 13px; color: #555; margin-bottom: 12px;">Dobânda estimată este calculată simplu: sumă x dobândă anuală x perioadă/12.</p>
+            <div id="deposit-income-list"></div>
+            <button class="btn-add" onclick="addDepositIncome()">+ Adaugă depozit</button>
         </div>
 
         <div class="income-section">
@@ -376,6 +397,10 @@
         </div>
 
         <div class="results" id="results">
+            <div class="result-item">
+                <span class="result-label">Dobândă calculată din depozite:</span>
+                <span class="result-value" id="deposit-interest-total">0,00 RON</span>
+            </div>
             <div class="result-item">
                 <span class="result-label">Total venituri din chirii:</span>
                 <span class="result-value" id="rental-total">0,00 RON</span>
@@ -448,6 +473,16 @@
             </div>
 
             <div class="result-item">
+                <span class="result-label">CAS anual:</span>
+                <span class="result-value" id="cas-amount">0,00 RON</span>
+            </div>
+
+            <div class="result-item" style="border-bottom: 2px solid #667eea; padding-bottom: 20px;">
+                <span class="result-label">Total taxe (Impozit + CASS + CAS):</span>
+                <span class="result-value" id="total-tax-payable">0,00 RON</span>
+            </div>
+
+            <div class="result-item">
                 <span class="result-label">Venit după impozit + CASS:</span>
                 <span class="result-value" id="net-income">0,00 RON</span>
             </div>
@@ -457,6 +492,7 @@
     </div>
 
     <script>
+        let depositIncomeCount = 0;
         let rentalIncomeCount = 0;
         let interestIncomeCount = 0;
         let otherIncomeCount = 0;
@@ -486,6 +522,24 @@
                 <button class="btn-remove" onclick="removeIncome('rental-${rentalIncomeCount}')">Șterge</button>
             `;
             
+            container.appendChild(item);
+        }
+
+        function addDepositIncome() {
+            depositIncomeCount++;
+            const container = document.getElementById('deposit-income-list');
+
+            const item = document.createElement('div');
+            item.className = 'deposit-item';
+            item.id = `deposit-${depositIncomeCount}`;
+            item.innerHTML = `
+                <input type="number" placeholder="Suma depozit (RON)" class="principal" min="0" step="0.01" oninput="debouncedAutoSave()">
+                <input type="number" placeholder="Dobândă anuală (%)" class="annual-rate" min="0" step="0.01" oninput="debouncedAutoSave()">
+                <input type="number" placeholder="Perioadă (luni)" class="months" min="1" step="1" oninput="debouncedAutoSave()">
+                <input type="text" placeholder="Dobândă estimată" class="computed-interest" disabled>
+                <button class="btn-remove" onclick="removeIncome('deposit-${depositIncomeCount}')">Șterge</button>
+            `;
+
             container.appendChild(item);
         }
 
@@ -570,6 +624,27 @@
         }
 
         function calculateTotal() {
+            // Get all deposits and calculate interest for each
+            const depositItems = document.querySelectorAll('#deposit-income-list .deposit-item');
+            let depositInterestTotal = 0;
+            depositItems.forEach(item => {
+                const principal = parseFloat(item.querySelector('.principal').value) || 0;
+                const annualRate = parseFloat(item.querySelector('.annual-rate').value) || 0;
+                const months = parseFloat(item.querySelector('.months').value) || 0;
+                const interest = principal * (annualRate / 100) * (months / 12);
+                depositInterestTotal += interest;
+
+                const computedField = item.querySelector('.computed-interest');
+                if (computedField) {
+                    computedField.value = interest > 0
+                        ? new Intl.NumberFormat('ro-RO', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        }).format(interest) + ' RON'
+                        : '';
+                }
+            });
+
             // Get all rental income
             const rentalItems = document.querySelectorAll('#rental-income-list .income-item');
             let rentalTotal = 0;
@@ -595,10 +670,11 @@
             });
 
             // Calculate totals and taxes according to requested rules
-            const grandTotal = rentalTotal + interestTotal + otherTotal;
+            const totalInterestWithDeposits = interestTotal + depositInterestTotal;
+            const grandTotal = rentalTotal + totalInterestWithDeposits + otherTotal;
             const taxableBase = rentalTotal * 0.80;
             const rentalTax = taxableBase * 0.10;
-            const interestTax = interestTotal * 0.10;
+            const interestTax = totalInterestWithDeposits * 0.10;
             const incomeTaxTotal = rentalTax + interestTax;
             const totalIncomeForCass = grandTotal;
 
@@ -606,6 +682,8 @@
             const minSalary = parseFloat(document.getElementById('minSalary').value) || 4050;
 
             const cassData = calculateCASS(totalIncomeForCass, minSalary);
+
+            const casAmount = 0;
 
             // Format numbers
             const formatter = new Intl.NumberFormat('ro-RO', {
@@ -615,8 +693,9 @@
             });
 
             // Update results
+            document.getElementById('deposit-interest-total').textContent = formatter.format(depositInterestTotal) + ' RON';
             document.getElementById('rental-total').textContent = formatter.format(rentalTotal) + ' RON';
-            document.getElementById('interest-total').textContent = formatter.format(interestTotal) + ' RON';
+            document.getElementById('interest-total').textContent = formatter.format(totalInterestWithDeposits) + ' RON';
             document.getElementById('other-total').textContent = formatter.format(otherTotal) + ' RON';
             document.getElementById('grand-total').textContent = formatter.format(grandTotal) + ' RON';
             document.getElementById('taxable-base').textContent = formatter.format(taxableBase) + ' RON';
@@ -633,8 +712,12 @@
             document.getElementById('cass-base').textContent = formatter.format(cassData.cassBase) + ' RON';
             document.getElementById('cass-rate').textContent = cassData.cassRate + '%';
             document.getElementById('cass-amount').textContent = formatter.format(cassData.cassAmount) + ' RON';
+            document.getElementById('cas-amount').textContent = formatter.format(casAmount) + ' RON';
 
-            const netIncome = grandTotal - incomeTaxTotal - cassData.cassAmount;
+            const totalTaxPayable = incomeTaxTotal + cassData.cassAmount + casAmount;
+            document.getElementById('total-tax-payable').textContent = formatter.format(totalTaxPayable) + ' RON';
+
+            const netIncome = grandTotal - totalTaxPayable;
             document.getElementById('net-income').textContent = formatter.format(netIncome) + ' RON';
 
             // Determine status
@@ -679,6 +762,16 @@
         function collectData() {
             const minSalary = document.getElementById('minSalary').value;
 
+            const depositItems = document.querySelectorAll('#deposit-income-list .deposit-item');
+            const depositData = [];
+            depositItems.forEach(item => {
+                depositData.push({
+                    principal: item.querySelector('.principal').value,
+                    annualRate: item.querySelector('.annual-rate').value,
+                    months: item.querySelector('.months').value
+                });
+            });
+
             const rentalItems = document.querySelectorAll('#rental-income-list .income-item');
             const rentalData = [];
             rentalItems.forEach(item => {
@@ -708,6 +801,7 @@
 
             return {
                 minSalary,
+                depositData,
                 rentalData,
                 interestData,
                 otherData,
@@ -793,6 +887,25 @@
 
             let html = `<p style="font-size:12px;color:#666;margin-bottom:10px;">Ultima salvare: <strong>${data.savedDate || '—'}</strong> &nbsp;|&nbsp; Salariu minim: <strong>${data.minSalary} RON</strong></p>`;
 
+            // Deposit table
+            html += `<h4 style="font-size:13px;color:#667eea;margin-bottom:6px;">Depozite (${(data.depositData || []).length} înregistrări)</h4>`;
+            if (data.depositData && data.depositData.length > 0) {
+                html += `<table class="data-table"><thead><tr><th>#</th><th>Sumă (RON)</th><th>Dobândă anuală</th><th>Luni</th><th>Dobândă estimată (RON)</th></tr></thead><tbody>`;
+                let depositInterestSum = 0;
+                data.depositData.forEach((item, i) => {
+                    const principal = parseFloat(item.principal) || 0;
+                    const annualRate = parseFloat(item.annualRate) || 0;
+                    const months = parseFloat(item.months) || 0;
+                    const interest = principal * (annualRate / 100) * (months / 12);
+                    depositInterestSum += interest;
+                    html += `<tr><td>${i + 1}</td><td>${formatter.format(principal)}</td><td>${formatter.format(annualRate)}%</td><td>${formatter.format(months)}</td><td>${formatter.format(interest)}</td></tr>`;
+                });
+                html += `<tr><td colspan="4" style="font-weight:700;">Total dobândă din depozite</td><td style="font-weight:700;color:#e67700;">${formatter.format(depositInterestSum)}</td></tr>`;
+                html += '</tbody></table>';
+            } else {
+                html += '<p class="no-data-msg">—</p>';
+            }
+
             // Rental table
             html += `<h4 style="font-size:13px;color:#667eea;margin-bottom:6px;">Chirii (${(data.rentalData || []).length} înregistrări)</h4>`;
             if (data.rentalData && data.rentalData.length > 0) {
@@ -864,6 +977,7 @@
                 try {
                     const data = JSON.parse(e.target.result);
                     if (!data.rentalData || !data.interestData) throw new Error('Format invalid');
+                    if (!data.depositData) data.depositData = [];
                     if (!data.otherData) data.otherData = [];
                     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
                     loadData();
@@ -889,13 +1003,30 @@
             document.getElementById('minSalary').value = data.minSalary || 4050;
 
             // Clear existing items
+            document.getElementById('deposit-income-list').innerHTML = '';
             document.getElementById('rental-income-list').innerHTML = '';
             document.getElementById('interest-income-list').innerHTML = '';
             document.getElementById('other-income-list').innerHTML = '';
 
+            depositIncomeCount = 0;
             rentalIncomeCount = 0;
             interestIncomeCount = 0;
             otherIncomeCount = 0;
+
+            // Load deposit data
+            if (data.depositData && data.depositData.length > 0) {
+                data.depositData.forEach(item => {
+                    addDepositIncome();
+                    const lastItem = document.querySelector('#deposit-income-list .deposit-item:last-child');
+                    if (lastItem) {
+                        lastItem.querySelector('.principal').value = item.principal || '';
+                        lastItem.querySelector('.annual-rate').value = item.annualRate || '';
+                        lastItem.querySelector('.months').value = item.months || '';
+                    }
+                });
+            } else {
+                addDepositIncome();
+            }
 
             // Load rental data
             if (data.rentalData && data.rentalData.length > 0) {
@@ -978,12 +1109,15 @@
 
             const localLoaded = loadDataFromLocal();
             if (!localLoaded) {
+                document.getElementById('deposit-income-list').innerHTML = '';
                 document.getElementById('rental-income-list').innerHTML = '';
                 document.getElementById('interest-income-list').innerHTML = '';
                 document.getElementById('other-income-list').innerHTML = '';
+                depositIncomeCount = 0;
                 rentalIncomeCount = 0;
                 interestIncomeCount = 0;
                 otherIncomeCount = 0;
+                addDepositIncome();
                 addRentalIncome();
                 addInterestIncome();
                 addOtherIncome();
@@ -996,13 +1130,16 @@
                 alert('✅ Datele salvate au fost șterse.');
                 
                 // Reset form
+                document.getElementById('deposit-income-list').innerHTML = '';
                 document.getElementById('rental-income-list').innerHTML = '';
                 document.getElementById('interest-income-list').innerHTML = '';
                 document.getElementById('other-income-list').innerHTML = '';
                 document.getElementById('results').classList.remove('show');
+                depositIncomeCount = 0;
                 rentalIncomeCount = 0;
                 interestIncomeCount = 0;
                 otherIncomeCount = 0;
+                addDepositIncome();
                 addRentalIncome();
                 addInterestIncome();
                 addOtherIncome();
@@ -1012,6 +1149,14 @@
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', async function() {
             await loadData();
+
+            if ('serviceWorker' in navigator) {
+                try {
+                    await navigator.serviceWorker.register('/service-worker.js');
+                } catch (error) {
+                    console.warn('Service worker registration failed:', error);
+                }
+            }
         });
     </script>
 </body>

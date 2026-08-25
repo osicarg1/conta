@@ -1,0 +1,11 @@
+{
+  "name": "Calculator Venituri 2026",
+  "short_name": "Taxe 2026",
+  "description": "Calculator pentru impozit, CAS si CASS pe venituri din chirii si dobanzi",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#667eea",
+  "lang": "ro",
+  "scope": "/"
+}
