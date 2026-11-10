@@ -377,10 +377,14 @@
             <button class="btn-calculate" onclick="saveData()" style="background: #4c6ef5; grid-column: 2;">💾 Salvează (local + cloud)</button>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
             <button class="btn-calculate" onclick="toggleDataPanel()" style="background: #495057;">🗃️ Date salvate</button>
             <button class="btn-calculate" onclick="clearData()" style="background: #ff6b6b;">🗑️ Șterge salvate</button>
             <button class="btn-calculate" onclick="loadData()" style="background: #ff922b;">📂 Reîncarcă (cloud/local)</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 20px;">
+            <button class="btn-calculate" onclick="shareLink()" style="background: #12b886;">🔗 Generează link partajat</button>
         </div>
 
         <!-- Panou date salvate -->
@@ -749,6 +753,12 @@
         let autoSaveTimer = null;
 
         function getClientId() {
+            // A shared link (?id=...) takes over this browser's data key so it loads the same cloud record.
+            const sharedId = new URLSearchParams(window.location.search).get('id');
+            if (sharedId) {
+                localStorage.setItem(CLIENT_ID_KEY, sharedId);
+            }
+
             let clientId = localStorage.getItem(CLIENT_ID_KEY);
             if (!clientId) {
                 clientId = (window.crypto && crypto.randomUUID)
@@ -757,6 +767,28 @@
                 localStorage.setItem(CLIENT_ID_KEY, clientId);
             }
             return clientId;
+        }
+
+        function syncUrlWithClientId() {
+            const clientId = getClientId();
+            const url = new URL(window.location.href);
+            if (url.searchParams.get('id') !== clientId) {
+                url.searchParams.set('id', clientId);
+                window.history.replaceState({}, '', url.toString());
+            }
+        }
+
+        async function shareLink() {
+            const shareUrl = new URL(window.location.href);
+            shareUrl.searchParams.set('id', getClientId());
+            const shareUrlString = shareUrl.toString();
+
+            try {
+                await navigator.clipboard.writeText(shareUrlString);
+                alert('🔗 Link copiat în clipboard:\n\n' + shareUrlString + '\n\nOricine deschide acest link va vedea aceleași date salvate în cloud.');
+            } catch (error) {
+                prompt('Copiază acest link pentru a partaja datele:', shareUrlString);
+            }
         }
 
         function collectData() {
@@ -1148,6 +1180,7 @@
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', async function() {
+            syncUrlWithClientId();
             await loadData();
 
             if ('serviceWorker' in navigator) {
